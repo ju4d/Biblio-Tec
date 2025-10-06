@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="estiloscss/style_inventario.css">
+    <title>Formulario Cliente</title>
+    <script>
+        let cliente = 0;
+
+        function enviarFormularioCliente() {
+            const id = document.getElementById('id').value;
+            const nombre = document.getElementById('nombre').value;
+            const telefono = document.getElementById('telefono').value;
+            const correo = document.getElementById('correo').value;
+            const vigencia = document.getElementById('vigencia').value;
+            const fechaInicio = document.getElementById('fecha_inicio').value;
+
+            const generosSeleccionados = [];
+            const checkboxes = document.querySelectorAll('input[name="generos[]"]:checked');
+            checkboxes.forEach(function (checkbox) {
+                generosSeleccionados.push(checkbox.value);
+            });
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', id ? 'php/actualizar_cliente.php' : 'php/procesarr_cliente.php', true);
+            xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        var respuesta = JSON.parse(xhr.responseText);
+                        if (respuesta.success) {
+                            alert(id ? 'Cliente actualizado con éxito.' : 'Cliente registrado con éxito.');
+                            location.reload();
+                        } else {
+                            alert('Error al procesar el cliente: ' + respuesta.message);
+                        }
+                    } else {
+                        alert('Error de conexión al procesar el cliente.');
+                    }
+                }
+            };
+            xhr.send(JSON.stringify({
+                id: id,
+                nombre: nombre,
+                telefono: telefono,
+                correo: correo,
+                vigencia: vigencia,
+                fecha_inicio: fechaInicio,
+                generos: generosSeleccionados
+            }));
+        }
+        function mostrarDatosCliente(data) {
+            // Obtiene la referencia de la tabla
+            var tabla = document.getElementById('tablaCliente');
+
+            // Borra los datos anteriores de la tabla
+            tabla.innerHTML = '';
+
+            // Crea una fila para cada dato del cliente y lo inserta en la tabla
+            for (var key in data) {
+                if (data.hasOwnProperty(key)) {
+                    var fila = tabla.insertRow();
+                    var celda1 = fila.insertCell(0);
+                    var celda2 = fila.insertCell(1);
+                    celda1.innerHTML = key;
+                    celda2.innerHTML = data[key];
+                }
+            }
+        }
+        function cargarGeneros() {
+            var generosContainer = document.querySelector('#generos-checkboxes');
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', 'php/obtener_generos.php', true);
+
+            xhr.onload = function () {
+                if (xhr.status >= 200 && xhr.status < 400) {
+                    var generos = JSON.parse(xhr.responseText);
+
+                    generos.forEach(function (genero) {
+                        var checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.name = 'generos[]';
+                        checkbox.value = genero.id_genero;
+
+                        var label = document.createElement('label');
+                        label.textContent = genero.nombre;
+
+                        generosContainer.appendChild(checkbox);
+                        generosContainer.appendChild(label);
+                        generosContainer.appendChild(document.createElement('br'));
+                    });
+                } else {
+                    console.error('Error al cargar los géneros:', xhr.statusText);
+                }
+            };
+
+            xhr.onerror = function () {
+                console.error('Error de conexión al cargar los géneros.');
+            };
+
+            xhr.send();
+        }
+
+        window.onload = cargarGeneros;
+
+        function consultarCliente() {
+            const id = document.getElementById('id_cliente').value;
+            const correo = document.getElementById('correo_cliente').value;
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', 'php/consultar_cliente.php', true);
+            xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    var respuesta = JSON.parse(xhr.responseText);
+                    if (xhr.status === 200 && respuesta.success) {
+                        mostrarDatosCliente(respuesta.data); // Llama a la función para mostrar los datos del cliente
+                        cliente = respuesta.data;
+                    } else {
+                        document.getElementById('resultado').innerText = 'Error: ' + respuesta.message;
+                    }
+                }
+            };
+            xhr.send(JSON.stringify({
+                id: id,
+                correo: correo
+            }));
+        }
+
+        function modificarCliente() {
+            if (cliente && cliente.id_cliente) {
+                //mostrarFormularioCliente();
+
+                const data = cliente;
+                document.getElementById('id').value = data.id_cliente;
+                document.getElementById('nombre').value = data.nombre;
+                document.getElementById('telefono').value = data.telefono;
+                document.getElementById('correo').value = data.correo;
+                document.getElementById('vigencia').value = data.vigencia;
+                document.getElementById('fecha_inicio').value = data.fecha_inicio;
+                mostrarFormularioCliente();
+                // const generosSeleccionados = data.generos.map(genero => genero.id_genero);
+                // const checkboxes = document.querySelectorAll('input[name="generos[]"]');
+                // checkboxes.forEach(checkbox => {
+                //   checkbox.checked = generosSeleccionados.includes(checkbox.value);
+                //});
+
+                //document.getElementById('registrar_cliente').scrollIntoView();
+            } else {
+                alert('Error al modificar el cliente.');
+            }
+        }
+
+        function mostrarFormularioCliente() {
+            document.getElementById('consultar_cliente').classList.add('hidden');
+            document.getElementById('consultar_genero').classList.add('hidden');
+            document.getElementById('registrar_cliente').classList.remove('hidden');
+        }
+
+        function mostrarFormularioConsulta() {
+            document.getElementById('consultar_cliente').classList.add('hidden');
+            document.getElementById('consultar_genero').classList.remove('hidden');
+            document.getElementById('registrar_cliente').classList.add('hidden');
+        }
+
+        function mostrarFormularioConsultaModificacion() {
+            document.getElementById('consultar_cliente').classList.remove('hidden');
+            document.getElementById('consultar_genero').classList.add('hidden');
+            document.getElementById('registrar_cliente').classList.add('hidden');
+        }
+    </script>
+</head>
+<body>
+    <h1>Cliente</h1>
+    <div id="barra_vertical">
+        <h2>consultas</h2>
+        <ul>
+            <li><a href="index.html">menu principal</a></li>
+            <br>
+            <li><a href="#registrar_cliente" onclick="mostrarFormularioCliente()">Registrar cliente</a></li>
+            <li><a href="#consultar_ciente" onclick="mostrarFormularioConsultaModificacion()">consulta -
+                    modificacion</a></li>
+            <!--
+
+              <li><a href="#consulta_genero" onclick="mostrarFormularioConsulta()">consular genero</a></li>
+          -->
+        </ul>
+    </div>
+    <div id="registrar_cliente" class="opcion hidden">
+        <h2>Registrar Cliente</h2>
+        <form id="formulario_cliente">
+            <input type="hidden" id="id" name="id">
+            <div>
+                <label for="nombre">Nombre:</label>
+                <input type="text" id="nombre" name="nombre" required>
+            </div>
+            <div>
+                <label for="telefono">Teléfono:</label>
+                <input type="tel" id="telefono" name="telefono" required>
+            </div>
+            <div>
+                <label for="correo">Correo Electrónico:</label>
+                <input type="email" id="correo" name="correo" required>
+            </div>
+            <div>
+                <label for="vigencia">Vigencia:</label>
+                <input type="date" id="vigencia" name="vigencia" required>
+            </div>
+            <div>
+                <label for="fecha_inicio">Fecha de Inicio:</label>
+                <input type="date" id="fecha_inicio" name="fecha_inicio" required>
+            </div>
+            <div id="generos-checkboxes"></div>
+            <button type="button" onclick="enviarFormularioCliente()">Enviar</button>
+        </form>
+    </div>
+    <div id="consultar_cliente" class="opcion hidden">
+        <h2>Consultar Cliente</h2>
+        <form id="formulario_consulta">
+            <div>
+                <label for="id_cliente">ID del Cliente:</label>
+                <input type="text" id="id_cliente" name="id_cliente">
+            </div>
+            <div>
+                <label for="correo_cliente">Correo Electrónico del Cliente:</label>
+                <input type="email" id="correo_cliente" name="correo_cliente">
+            </div>
+            <button type="button" onclick="consultarCliente()">Consultar</button>
+        </form>
+
+        <div class="centrar">
+            <button type="button" onclick="modificarCliente()">Modificar Cliente</button>
+        </div>
+        <!-- Aquí se muestra la tabla con los datos del cliente -->
+        <table id="tablaCliente">
+            <thead>
+                <tr>
+
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Aquí se insertarán las filas con los datos del cliente -->
+            </tbody>
+        </table>
+    </div>
+    <div id="consultar_genero" class="opcion hidden"></div>
+</body>
+
+</html>

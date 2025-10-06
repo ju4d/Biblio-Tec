@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="estiloscss/style_inventario.css">
+    <title>Formulario Proveedor</title>
+    <script>
+        let proveedor = 0;
+
+        function enviarFormularioProveedor() {
+            const id = document.getElementById('id').value;
+            const nombre = document.getElementById('nombre').value;
+            const telefono = document.getElementById('telefono').value;
+            const direccion = document.getElementById('direccion').value;
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', id ? 'php/actualizar_proveedor.php' : 'php/procesar_proveedor.php', true);
+            xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        var respuesta = JSON.parse(xhr.responseText);
+                        if (respuesta.success) {
+                            alert(id ? 'Proveedor actualizado con éxito.' : 'Proveedor registrado con éxito.');
+                            location.reload();
+                        } else {
+                            alert('Error al procesar el proveedor: ' + respuesta.message);
+                        }
+                    } else {
+                        alert('Error de conexión al procesar el proveedor.');
+                    }
+                }
+            };
+            xhr.send(JSON.stringify({
+                id: id,
+                nombre: nombre,
+                telefono: telefono,
+                direccion: direccion
+            }));
+        }
+
+        function consultarProveedor() {
+            const id = document.getElementById('id_proveedor').value;
+            const nombre = document.getElementById('nombre_proveedor').value;
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', 'php/consultar_proveedor.php', true);
+            xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    var respuesta = JSON.parse(xhr.responseText);
+                    if (xhr.status === 200 && respuesta.success) {
+                        document.getElementById('resultado').innerText = JSON.stringify(respuesta.data, null, 2);
+                        proveedor = respuesta.data;
+                    } else {
+                        document.getElementById('resultado').innerText = 'Error: ' + respuesta.message;
+                    }
+                }
+            };
+            xhr.send(JSON.stringify({
+                id: id,
+                nombre: nombre
+            }));
+        }
+
+        function modificarProveedor() {
+            if (proveedor && proveedor.id_editorial) {
+                const data = proveedor;
+                document.getElementById('id').value = data.id_editorial;
+                document.getElementById('nombre').value = data.nombre;
+                document.getElementById('telefono').value = data.telefono;
+                document.getElementById('direccion').value = data.direccion;
+                mostrarFormularioProveedor();
+            } else {
+                alert('Error al modificar el proveedor.');
+            }
+        }
+
+        function mostrarFormularioProveedor(){
+            document.getElementById('consultar_proveedor').classList.add('hidden');
+            document.getElementById('registrar_proveedor').classList.remove('hidden');
+            document.getElementById('mostrar_catalogo').classList.add('hidden');
+            
+        }
+
+        function mostrarFormularioConsultaModificacion(){
+            document.getElementById('consultar_proveedor').classList.remove('hidden');
+            document.getElementById('registrar_proveedor').classList.add('hidden');
+            document.getElementById('mostrar_catalogo').classList.add('hidden');
+            
+
+        }
+       
+        function mostrarCatalogo (){
+            document.getElementById('mostrar_catalogo').classList.remove('hidden');
+            document.getElementById('consultar_proveedor').classList.add('hidden');
+            document.getElementById('registrar_proveedor').classList.add('hidden');
+
+        }
+       
+        function consultarCatalogo(){
+            
+          //  const criterio = document.getElementById('criterio').value;
+           // const busqueda = document.getElementById('busqueda').value;
+            const id = proveedor.id_editorial;
+            fetch('php/consultar_libros.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    id: id
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const resultadoDiv = document.getElementById('resultado_consulta');
+                resultadoDiv.innerHTML = '';
+
+                if (data.success) {
+                    if (data.libros.length > 0) {
+                        const table = document.createElement('table');
+                        table.innerHTML = `
+                            <tr '>
+                                <th>ID</th>
+                                <th>Título</th>
+                                <th>Autor</th>
+                                <th>Edición</th>
+                                <th>Precio</th>
+                                <th>Stock</th>
+                                <th>Género</th>
+                                <th>Editorial</th>
+                            </tr>
+                        `;
+                        data.libros.forEach(libro => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${libro.id_libro}</td>
+                                <td>${libro.titulo}</td>
+                                <td>${libro.autor}</td>
+                                <td>${libro.edicion}</td>
+                                <td>${libro.precio}</td>
+                                <td>${libro.stock}</td>
+                                <td>${libro.genero}</td>
+                                <td>${libro.editorial}</td>
+                            `;
+                            table.appendChild(row);
+                        });
+                        resultadoDiv.appendChild(table);
+                    } else {
+                        resultadoDiv.textContent = 'No se encontraron libros con el criterio de búsqueda proporcionado.';
+                    }
+                } else {
+                    resultadoDiv.textContent = 'Error al realizar la consulta: ' + data.message;
+                }
+            })
+            .catch(error => {
+                console.error('Error al realizar la consulta:', error);
+                document.getElementById('resultado_consulta').textContent = 'Error al realizar la consulta. Por favor, inténtalo de nuevo.';
+            });
+        
+
+        }
+
+    </script>
+</head>
+<body>
+    <h1>Proveedor</h1>
+    <div id="barra_vertical">
+        <h2>Consultas</h2>
+        <ul>
+            <li><a href="index.html">Menú Principal</a></li>
+            <br>
+            <li><a href="#" onclick="mostrarFormularioProveedor()">Registrar proveedor</a></li>
+            <li><a href="#" onclick="mostrarFormularioConsultaModificacion()">Consulta - Modificación</a></li>
+            </ul>
+    </div>
+    <div id="registrar_proveedor" class="opcion hidden">
+        <h2>Registrar Proveedor</h2>
+        <form id="formulario_proveedor">
+            <input type="hidden" id="id" name="id">
+            <div>
+                <label for="nombre">Nombre:</label>
+                <input type="text" id="nombre" name="nombre" required>
+            </div>
+            <div>
+                <label for="telefono">Teléfono:</label>
+                <input type="tel" id="telefono" name="telefono" required>
+            </div>
+            <div>
+                <label for="direccion">Dirección:</label>
+                <input type="text" id="direccion" name="direccion" required>
+            </div>
+            <button type="button" onclick="enviarFormularioProveedor()">Enviar</button>
+        </form>
+    </div>
+
+    <div id="consultar_proveedor" class="opcion hidden">
+        <h2>Consultar Proveedor</h2>
+        <form id="formulario_consulta">
+            <div>
+                <label for="id_proveedor">ID del Proveedor:</label>
+                <input type="text" id="id_proveedor" name="id_proveedor">
+            </div>
+            <div>
+                <label for="nombre_proveedor">Nombre:</label>
+                <input type="text" id="nombre_proveedor" name="nombre_proveedor">
+            </div>
+            <button type="button" onclick="consultarProveedor()">Consultar</button>
+        </form>
+        <div>
+            <p id="resultado"></p>
+        </div>
+        <div class="centrar">
+            <button type="button" onclick="modificarProveedor()">Modificar Datos Proveedor</button>
+            <button type="button" onclick="consultarCatalogo()">Consultar catalogo</button>
+        </div>
+        <div id="resultado_consulta" class="opcion">
+            <!-- Aquí se mostrarán los resultados de la consulta -->
+        </div>
+
+    </div>
+
+
+    <div id="mostrar_catalogo" class="opcion hidden">
+        <h2>consultar libro</h2>
+      <!--  
+        <form id="formulario_consulta">
+            <div>
+                <label for="criterio">Buscar por:</label>
+                <select id="criterio" name="criterio" required>
+                    <option value="nombre">Nombre</option>
+                    <option value="autor">Autor</option>
+                </select>
+            </div>
+            <div>
+                <label for="busqueda">Término de búsqueda:</label>
+                <input type="text" id="busqueda" name="busqueda" required>
+            </div>
+            <button type="button" onclick="consultarCatalogo()">Consultar</button>
+        </form>
+        <button type="button" onclick="consultarCatalogo()">Consultar</button>
+    -->
+        
+    </div>
+
+
+</body>
+</html>

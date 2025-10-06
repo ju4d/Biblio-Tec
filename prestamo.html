@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="estiloscss/style_pretamo.css">
+    <title>Formulario de Préstamo</title>
+    <script>
+        let librosPrestamo = [];
+
+        function validar_datos_prestamo() {
+            const fechaInicio = document.getElementById('fecha_inicio').value;
+            const fechaEntrega = document.getElementById('fecha_entrega').value;
+            const idEmpleado = document.getElementById('id_empleado').value;
+            const idCliente = document.getElementById('id_cliente').value;
+
+            if (fechaInicio && fechaEntrega && idEmpleado && idCliente) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', 'php/validar_prestamo.php', true);
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.onreadystatechange = function() {
+                    if (xhr.readyState === 4 && xhr.status === 200) {
+                        var respuesta = JSON.parse(xhr.responseText);
+                        if (respuesta.existe) {
+                            document.getElementById('libros-section').classList.remove('hidden');
+                        } else {
+                            alert('El cliente o el empleado no existe en la base de datos.');
+                        }
+                    }
+                };
+                xhr.send('id_cliente=' + idCliente + '&id_empleado=' + idEmpleado);
+            } else {
+                alert("Por favor, complete todos los campos antes de continuar.");
+            }
+        }
+
+        function agregarLibro() {
+            const idLibro = document.getElementById('id_libro').value;
+
+            if (!idLibro) {
+                alert('Por favor, ingrese un ID de libro.');
+                return;
+            }
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', 'php/validar_libro_prestamo.php', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var respuesta = JSON.parse(xhr.responseText);
+                    if (respuesta.existe) {
+                        librosPrestamo.push({ idLibro: idLibro });
+                        mostrarDetallesLibro(idLibro);
+                        document.getElementById('id_libro').value = '';
+                    } else {
+                        alert('El libro no existe en la base de datos.');
+                    }
+                }
+            };
+            xhr.send('id_libro=' + idLibro);
+        }
+
+        function mostrarDetallesLibro(idLibro) {
+            var listaLibros = document.getElementById('lista_libros');
+            var li = document.createElement('li');
+            li.textContent = 'ID Libro: ' + idLibro;
+            listaLibros.appendChild(li);
+        }
+
+        function enviarPrestamo() {
+            const fechaInicio = document.getElementById('fecha_inicio').value;
+            const fechaEntrega = document.getElementById('fecha_entrega').value;
+            const idEmpleado = document.getElementById('id_empleado').value;
+            const idCliente = document.getElementById('id_cliente').value;
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', 'php/procesar_prestamo.php', true);
+            xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    alert('Préstamo registrado con éxito.');
+                    location.reload();
+                }
+            };
+            xhr.send(JSON.stringify({
+                fecha_inicio: fechaInicio,
+                fecha_entrega: fechaEntrega,
+                id_empleado: idEmpleado,
+                id_cliente: idCliente,
+                libros: librosPrestamo
+            }));
+        }
+
+        
+    </script>
+</head>
+<body>
+    <header>
+        <h1>Rentas</h1>
+    </header>
+    <div id="barra_vertical">
+        <ul>
+            <li><a href="index.html">Menu Principal</a></li>
+            <li><a href="devolucion.html">Registrar Devolución</a></li>
+         <!--   <li><a href="devolucion.html">Registrar Multa</a></li>-->
+            
+        </ul>
+    </div>
+    
+    <form id="formulario_prestamo" onsubmit="enviarPrestamo(); return false;">
+        <div>
+            <label for="fecha_inicio">Fecha de Inicio:</label>
+            <input type="date" id="fecha_inicio" name="fecha_inicio" required>
+        </div>
+        <div>
+            <label for="fecha_entrega">Fecha de Entrega:</label>
+            <input type="date" id="fecha_entrega" name="fecha_entrega" required>
+        </div>
+        <div>
+            <label for="id_empleado">ID del Empleado:</label>
+            <input type="number" id="id_empleado" name="id_empleado" required>
+        </div>
+        <div>
+            <label for="id_cliente">ID del Cliente:</label>
+            <input type="number" id="id_cliente" name="id_cliente" required>
+        </div>
+        <button type="button" onclick="validar_datos_prestamo()">Continuar</button>
+        <div id="libros-section" class="hidden">
+            <h2>Seleccionar Libros</h2>
+            <div>
+                <label for="id_libro">ID Libro:</label>
+                <input type="number" id="id_libro" name="id_libro">
+                <button type="button" onclick="agregarLibro()">Agregar Libro</button>
+            </div>
+            <div>
+                <h3>Detalles de los Libros</h3>
+                <ul id="lista_libros"></ul>
+            </div>
+            <button type="submit">Registrar Préstamo</button>
+        </div>
+    </form>
+    
+</body>
+</html>

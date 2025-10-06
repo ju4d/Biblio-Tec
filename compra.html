@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="estiloscss\style_compras.css">
+    <title>Formulario de Compra</title>
+</head>
+
+<body>
+    <header>
+        <h1>Compras</h1>
+    </header>
+    <form id="formulario_compra">
+        <div id="barra_vertical">
+            <ul>
+                <li><a href="index.html">menu principal</a></li>
+                <li><a href="inventario.html">inventario</a></li>
+
+            </ul>
+        </div>
+
+        <div>
+            <label for="total">Total:</label>
+            <input type="number" id="total" name="total" step="0.01" required>
+        </div>
+        <div>
+            <label for="metodo_pago">Método de Pago:</label>
+            <select id="metodo_pago" name="metodo_pago" required>
+                <option value="Efectivo">Efectivo</option>
+                <option value="Tarjeta">Tarjeta</option>
+                <option value="Transferencia">Transferencia</option>
+                <option value="Cheque">Cheque</option>
+            </select>
+        </div>
+        <div>
+            <label for="fecha">Fecha:</label>
+            <input type="date" id="fecha" name="fecha" required>
+        </div>
+        <div>
+            <label for="id_editorial">ID de Editorial:</label>
+            <input type="number" id="id_editorial" name="id_editorial" required>
+        </div>
+        <div>
+            <label for="id_empleado">ID de Empleado:</label>
+            <input type="number" id="id_empleado" name="id_empleado" required>
+        </div>
+        <button type="button" onclick="enviarFormulario()">Enviar</button>
+    </form>
+
+    <script>
+        function enviarFormulario() {
+            const metodoPago = document.getElementById('metodo_pago').value;
+            const idEditorial = document.getElementById('id_editorial').value;
+            const fecha = document.getElementById('fecha').value;
+            const total = document.getElementById('total').value;
+            const idEmpleado = document.getElementById('id_empleado').value;
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', 'php/procesar_compra.php', true); // Corrección en la ruta
+            xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    var respuesta = JSON.parse(xhr.responseText);
+                    if (xhr.status === 200 && respuesta.success) {
+
+                        alert('Compra registrada con éxito. ID de la compra: ' + respuesta.message);
+                        location.reload();
+                    } else {
+                        alert('Error al registrar la compra: ' + respuesta.message); // Cambio 'respuesta.error' a 'respuesta.message'
+                    }
+                }
+            };
+            xhr.send(JSON.stringify({
+                metodo_pago: metodoPago,
+                id_editorial: idEditorial, // Corrección en el nombre de la clave
+                fecha: fecha,
+                total: total,
+                id_empleado: idEmpleado
+            }));
+        }
+
+    </script>
+</body>
+
+</html>

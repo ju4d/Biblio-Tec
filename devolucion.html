@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="estiloscss/style_pretamo.css">
+    <title>Devolución de Libro</title>
+    <script>
+        var librosAgregados = []; // Array de objetos con { idLibro, fechaEntrega, esTardia, diasRetraso }
+        var librosPrestados = []; // Variable global para almacenar los libros prestados
+        var multaPorRetraso = 30; // Monto por cada día de retraso
+        var multaTotal = 0; // Monto total de la multa
+
+        function procesarMulta() {
+
+            const idCliente = document.getElementById('id_cliente_multa').value;
+            const montoMulta = document.getElementById('montoM').value;
+            const conceptoMulta = document.getElementById('descripcionMulta').value;
+            const statusMulta = document.getElementById('statusM').value;
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', 'php/prestamo/enviarMulta.php', true); // Corrección en la ruta
+            xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+            xhr.onreadystatechange = function () {
+
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        var respuesta = JSON.parse(xhr.responseText);
+                        if (respuesta.success) {
+                            // alert(id ? 'personal actualizado con éxito.' : 'personal registrado con éxito.');
+                            alert('multa registrada con éxito. ID de la multa: ' + respuesta.message);
+                            location.reload();
+                        } else {
+                            alert('Error al procesar el personal: ' + respuesta.message);
+                        }
+                    } else {
+                        alert('Error de conexión al procesar el personal.');
+                    }
+                }
+                //if (xhr.readyState === 4) {
+                //  var respuesta = JSON.parse(xhr.responseText);
+                // if (xhr.status === 200 && respuesta.success) {
+
+                //   alert('Compra registrada con éxito. ID de la multa: ' + respuesta.message);
+                //   location.reload();
+                //} else {
+                //   alert('Error al registrar la compra: ' + respuesta.message); // Cambio 'respuesta.error' a 'respuesta.message'
+                //}
+                // }
+            };
+            xhr.send(JSON.stringify({
+                id_cliente: idCliente,
+                monto: montoMulta,
+                concepto: conceptoMulta,
+                status: statusMulta
+            }));
+        }
+
+        function agregarLibro() {
+            var idLibro = parseInt(document.getElementById('id_libro').value);
+
+            if (isNaN(idLibro) || idLibro <= 0) {
+                alert('Por favor ingresa un ID de libro válido.');
+                return;
+            }
+
+            var libroEncontrado = false;
+            var fechaEntrega = null;
+            var esTardia = false;
+            var diasRetraso = 0;
+            for (var i = 0; i < librosPrestados.length; i++) {
+                if (librosPrestados[i].id_libro === idLibro) {
+                    libroEncontrado = true;
+                    fechaEntrega = librosPrestados[i].fecha_entrega;
+                    var fechaDevolucion = new Date();
+                    var fechaEntregaDate = new Date(fechaEntrega);
+
+                    if (fechaDevolucion > fechaEntregaDate) {
+                        esTardia = true;
+                        diasRetraso = Math.ceil((fechaDevolucion - fechaEntregaDate) / (1000 * 60 * 60 * 24));
+                    }
+                    break;
+                }
+            }
+
+            if (!libroEncontrado) {
+                alert('El libro no pertenece a la lista de libros prestados al cliente.');
+                return;
+            }
+
+            librosAgregados.push({ idLibro: idLibro, fechaEntrega: fechaEntrega, esTardia: esTardia, diasRetraso: diasRetraso });
+            console.log('Libros agregados:', librosAgregados);
+
+            actualizarListaLibrosAgregados();
+            calcularMultaTotal();
+            document.getElementById('id_libro').value = '';
+        }
+
+        function actualizarListaLibrosAgregados() {
+            var listaLibros = document.getElementById('lista_libros_agregados');
+            listaLibros.innerHTML = '';
+
+            for (var i = 0; i < librosAgregados.length; i++) {
+                var libro = librosAgregados[i];
+                var libroHTML = '<ul>' +
+                    '<li>ID del Libro: ' + libro.idLibro + '</li>' +
+                    '<li>Fecha de Entrega: ' + libro.fechaEntrega + '</li>' +
+                    (libro.esTardia ? '<li style="color:red;">Entrega Tardía: ' + libro.diasRetraso + ' días</li>' : '') +
+                    '</ul>';
+                listaLibros.innerHTML += libroHTML;
+            }
+
+            document.getElementById('libros_agregados_seccion').classList.remove('hidden');
+        }
+
+        function calcularMultaTotal() {
+            multaTotal = 0;
+            for (var i = 0; i < librosAgregados.length; i++) {
+                var libro = librosAgregados[i];
+                if (libro.esTardia) {
+                    multaTotal += libro.diasRetraso * multaPorRetraso;
+                }
+            }
+
+            if (multaTotal > 0) {
+                mostrarMultaTotal();
+            }
+        }
+
+        function mostrarMultaTotal() {
+            document.getElementById('multaL').innerHTML = '<h2>Multa</h2>' +
+                '<p>Monto total de la multa: $' + multaTotal + '</p>' +
+                '<input type="hidden" id="monto" name="monto" value="' + multaTotal + '">' +
+                '<input type="hidden" id="motivo" name="motivo" value="Entrega tardía">' +
+                '<select id="status" name="status" required>' +
+                '<option value="1">Pagada</option>' +
+                '<option value="0">Pendiente de pago</option>' +
+                '</select>';
+
+            document.getElementById('multaL').classList.remove('hidden');
+        }
+
+        function mostrarFormularioMulta() {
+            document.getElementById('formulario_devolucion').classList.add('hidden');
+            document.getElementById('formulario_multa').classList.remove('hidden');
+        }
+
+        function mostrarFormularioDevolucion() {
+            document.getElementById('formulario_multa').classList.add('hidden');
+            document.getElementById('formulario_devolucion').classList.remove('hidden');
+        }
+
+        function procesarDevolucion() {
+            var idCliente = document.getElementById('id_cliente').value;
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', 'php/prestamo/obtener_libros_prestados.php?id_cliente=' + idCliente, true);
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    var response = JSON.parse(xhr.responseText);
+                    var output = '';
+
+                    if (response.success && response.libros.length > 0) {
+                        librosPrestados = response.libros;
+                        output = '<h2>Libros Prestados</h2>';
+                        for (var i in response.libros) {
+                            output += '<ul>' +
+                                '<li>ID del Libro: ' + response.libros[i].id_libro + '</li>' +
+                                '<li>Título: ' + response.libros[i].titulo + '</li>' +
+                                '<li>Autor: ' + response.libros[i].autor + '</li>' +
+                                '<li>Edición: ' + response.libros[i].edicion + '</li>' +
+                                '<li>Fecha Límite de Devolución: ' + response.libros[i].fecha_entrega + '</li>' +
+                                '</ul>';
+                        }
+                    } else {
+                        output = '<p>' + response.message + '</p>';
+                    }
+
+                    document.getElementById('libros_seccion').innerHTML = output;
+                    document.getElementById('libros_seccion').classList.remove('hidden');
+                    document.getElementById('capturaLibros').classList.remove('hidden');
+                } else {
+                    console.error('Error en la solicitud AJAX:', xhr.status, xhr.statusText);
+                }
+            };
+            xhr.onerror = function () {
+                console.error('Error en la conexión AJAX');
+            };
+            xhr.send();
+        }
+
+        function enviarDevolucion() {
+            const idCliente = document.getElementById('id_cliente').value;
+            const montoMulta = document.getElementById('monto').value || 0;
+            const conceptoMulta = document.getElementById('motivo').value || '';
+            const statusMulta = document.getElementById('status').value || 0;
+
+            console.log('Enviando solicitud de devolución para el cliente ID:', idCliente);
+            console.log('Libros agregados:', librosAgregados);
+            console.log('Datos de la multa:', { montoMulta, conceptoMulta, statusMulta });
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', 'php/enviarDevolucion.php', true);
+            xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    try {
+                        var respuesta = JSON.parse(xhr.responseText);
+                        if (xhr.status === 200 && respuesta.success) {
+                            console.log('Devolución registrada con éxito para el cliente ID:', idCliente);
+                            alert('Devolución registrada con éxito.');
+                            location.reload();
+                        } else {
+                            console.error('Error al registrar la devolución para el cliente ID:', idCliente, 'Error:', respuesta.error);
+                            alert('Error al registrar la devolución: ' + respuesta.error);
+                        }
+                    } catch (e) {
+                        console.error('Error al procesar la respuesta JSON:', e);
+                        alert('Error al procesar la respuesta del servidor.');
+                    }
+                }
+            };
+            xhr.send(JSON.stringify({
+                id_cliente: idCliente,
+                libros: librosAgregados,
+                multa: {
+                    monto: montoMulta,
+                    concepto: conceptoMulta,
+                    status: statusMulta
+                }
+            }));
+        }
+    </script>
+</head>
+
+<body>
+    <header>
+        <h1>Devolución de Libro</h1>
+    </header>
+
+    <div id="barra_vertical">
+        <ul>
+            <li><a href="index.html">Menú Principal</a></li>
+            <li><a href="#formulario_devolucion" onclick="mostrarFormularioDevolucion()">Registrar Devolución</a></li>
+            <li><a href="#formulario_multa" onclick="mostrarFormularioMulta()">Registrar Multa</a></li>
+
+        </ul>
+    </div>
+
+
+
+    <div>
+        <form id="formulario_devolucion" onsubmit="enviarDevolucion(); return false;">
+            <h2>Devolución</h2>
+            <div>
+                <label for="id_cliente">ID del Cliente:</label>
+                <input type="number" id="id_cliente" name="id_cliente" required>
+            </div>
+            <button type="button" onclick="procesarDevolucion()">Procesar Devolución</button>
+
+            <div id="libros_seccion" class="hidden">
+                <h3>Libros Prestados</h3>
+            </div>
+            <div id="capturaLibros" class="hidden">
+                <label for="id_libro">ID del Libro:</label>
+                <input type="number" id="id_libro" name="id_libro" required>
+                <button type="button" onclick="agregarLibro()">Agregar Libro</button>
+            </div>
+            <div id="libros_agregados_seccion" class="hidden">
+                <h3>Libros Registrados</h3>
+                <div id="lista_libros_agregados"></div>
+            </div>
+            <div id="multaL" class="hidden"></div>
+            <button type="submit" onclick="enviarDevolucion()">Enviar</button>
+        </form>
+    </div>
+
+    <div>
+        <form id="formulario_multa" class="hidden">
+            <h2>Multa</h2>
+            <div>
+                <label for="id_cliente_multa">ID del Cliente:</label>
+                <input type="number" id="id_cliente_multa" name="id_cliente_multa" required>
+            </div>
+            <div>
+                <label for="montoM">Monto:</label>
+                <input type="number" id="montoM" name="montoM" required>
+            </div>
+            <div>
+                <label for="descripcionMulta">Descripción:</label>
+                <input type="text" id="descripcionMulta" name="descripcionMulta" required>
+            </div>
+            <div>
+                <label for="statusM">Status:</label>
+                <select id="statusM" name="statusM" required>
+                    <option value="1">Pagada</option>
+                    <option type="number" value="0">No pagada</option>
+                </select>
+            </div>
+            <button type="button" onclick="procesarMulta()">Enviar</button>
+        </form>
+    </div>
+</body>
+
+</html>

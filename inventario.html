@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menú</title>
+    <link rel="stylesheet" href="estiloscss\style_inventario.css">
+    <script>
+        function cargarOpciones() {
+            fetch('php/obtener_opciones.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const generos = data.options.generos;
+                        const editoriales = data.options.editoriales;
+
+                        const selectGenero = document.getElementById('id_genero');
+                        const selectEditorial = document.getElementById('id_editorial');
+
+                        generos.forEach(genero => {
+                            const option = document.createElement('option');
+                            option.value = genero.id_genero;
+                            option.textContent = genero.nombre;
+                            selectGenero.appendChild(option);
+                        });
+
+                        editoriales.forEach(editorial => {
+                            const option = document.createElement('option');
+                            option.value = editorial.id_editorial;
+                            option.textContent = editorial.nombre;
+                            selectEditorial.appendChild(option);
+                        });
+                    } else {
+                        alert('Error al cargar las opciones: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al cargar las opciones:', error);
+                    alert('Error al cargar las opciones. Por favor, inténtalo de nuevo.');
+                });
+        }
+
+        // Llamar a la función para cargar las opciones al cargar la página
+        window.onload = cargarOpciones;
+        function enviarFormularioLibro() {
+            const titulo = document.getElementById('titulo').value;
+            const autor = document.getElementById('autor').value;
+            const edicion = document.getElementById('edicion').value;
+            const precio = document.getElementById('precio').value;
+            const stock = document.getElementById('stock').value;
+            const idGenero = document.getElementById('id_genero').value;
+            const idEditorial = document.getElementById('id_editorial').value;
+            const idCompra = document.getElementById('id_compra').value;
+
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', 'php/guardar_libro.php', true);
+            xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    var respuesta = JSON.parse(xhr.responseText);
+                    if (xhr.status === 200 && respuesta.success) {
+                        alert('Libro registrado con éxito.');
+                        location.reload();
+                    } else {
+                        alert('Error al registrar el libro: ' + respuesta.message);
+                    }
+                }
+            };
+            xhr.send(JSON.stringify({
+                titulo: titulo,
+                autor: autor,
+                edicion: edicion,
+                precio: precio,
+                stock: stock,
+                id_genero: idGenero,
+                id_editorial: idEditorial,
+                id_compra: idCompra
+            }));
+        }
+        /// consultar libros 
+        function consultarLibros() {
+            const criterio = document.getElementById('criterio').value;
+            const busqueda = document.getElementById('busqueda').value;
+
+            fetch('php/consultar_libros.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    criterio: criterio,
+                    busqueda: busqueda
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    const resultadoDiv = document.getElementById('resultado_consulta');
+                    resultadoDiv.innerHTML = '';
+
+                    if (data.success) {
+                        if (data.libros.length > 0) {
+                            const table = document.createElement('table');
+                            table.innerHTML = `
+                            <tr '>
+                                <th>ID</th>
+                                <th>Título</th>
+                                <th>Autor</th>
+                                <th>Edición</th>
+                                <th>Precio</th>
+                                <th>Stock</th>
+                                <th>Género</th>
+                                <th>Editorial</th>
+                            </tr>
+                        `;
+                            data.libros.forEach(libro => {
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                                <td>${libro.id_libro}</td>
+                                <td>${libro.titulo}</td>
+                                <td>${libro.autor}</td>
+                                <td>${libro.edicion}</td>
+                                <td>${libro.precio}</td>
+                                <td>${libro.stock}</td>
+                                <td>${libro.genero}</td>
+                                <td>${libro.editorial}</td>
+                            `;
+                                table.appendChild(row);
+                            });
+                            resultadoDiv.appendChild(table);
+                        } else {
+                            resultadoDiv.textContent = 'No se encontraron libros con el criterio de búsqueda proporcionado.';
+                        }
+                    } else {
+                        resultadoDiv.textContent = 'Error al realizar la consulta: ' + data.message;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al realizar la consulta:', error);
+                    document.getElementById('resultado_consulta').textContent = 'Error al realizar la consulta. Por favor, inténtalo de nuevo.';
+                });
+        }
+
+        function enviarFormularioMobiliario() {
+            //const id = document.getElementById('id').value;
+            const nombre = document.getElementById('nombre_mobiliario').value;
+            const descripcion = document.getElementById('descripcion_mobiliario').value;
+            const status = document.getElementById('status_mobiliario').value;
+            //const salario = document.getElementById('salario').value;
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', 'php/procesar_mobiliario.php', true);
+            xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        var respuesta = JSON.parse(xhr.responseText);
+                        if (respuesta.success) {
+                            alert('mobiliario registrado con éxito.');
+                            location.reload();
+                        } else {
+                            alert('Error al procesar el personal: ' + respuesta.message);
+                        }
+                    } else {
+                        alert('Error de conexión al procesar el personal.');
+                    }
+                }
+            };
+
+            //
+            xhr.send(JSON.stringify({
+                // id: id,
+                nombre: nombre,
+                descripcion: descripcion,
+                status: status
+
+            }));
+        }
+
+        function consultarMobiliario() {
+            const criterio = document.getElementById('criterio_mobiliario').value;
+            const busqueda = document.getElementById('busqueda_mobiliario').value;
+
+            fetch('php/consultar_mobiliario.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    criterio: criterio,
+                    busqueda: busqueda
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data); // Añade esta línea para depurar
+                    const resultadoDiv = document.getElementById('resultado_consulta_mobiliario');
+                    resultadoDiv.innerHTML = '';
+
+                    if (data.success) {
+                        if (data.mobiliario.length > 0) {
+                            const table = document.createElement('table');
+                            table.innerHTML = `
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Descripción</th>
+                        <th>Status</th>
+                    </tr>
+                `;
+                            data.mobiliario.forEach(mobiliario => {
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                        <td>${mobiliario.id_mobiliario}</td>
+                        <td>${mobiliario.nombre}</td>
+                        <td>${mobiliario.descripcion}</td>
+                        <td>${mobiliario.estatus}</td>
+                    `;
+                                table.appendChild(row);
+                            });
+                            resultadoDiv.appendChild(table);
+                        } else {
+                            resultadoDiv.textContent = 'No se encontró mobiliario con el criterio de búsqueda proporcionado.';
+                        }
+                    } else {
+                        resultadoDiv.textContent = 'Error al realizar la consulta: ' + data.message;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al realizar la consulta:', error);
+                    document.getElementById('resultado_consulta_mobiliario').textContent = 'Error al realizar la consulta. Por favor, inténtalo de nuevo.';
+                });
+        }
+
+    </script>
+</head>
+
+<body>
+    <header>
+        <h1>Inventario</h1>
+    </header>
+
+    <div id="barra_vertical">
+        <h2>Consultas</h2>
+        <ul>
+            <li><a href="index.html">menu principal</a></li>
+            <br>
+            <li><a href="#registrar_libro">registrar libro</a></li>
+            <li><a href="#consultar_libro">consultar libro</a></li>
+            <li><a href="#registrar_mobiliario">registrar mobiliario</a></li>
+            <!--
+
+             <li><a href="#modificar_status_mobiliario">modificar status mobiliario</a></li>
+         -->
+            <li><a href="#consultar_mobiliario">consultar mobiliario</a></li>
+
+        </ul>
+    </div>
+
+    <div id="registrar_libro" class="opcion">
+        <h2>Registrar libro</h2>
+
+        <form id="formulario_libros">
+            <div>
+                <label for="id_compra">id_compra:</label>
+                <input type="number" id="id_compra" name="id_compra" required>
+            </div>
+            <div>
+                <label for="titulo">Título:</label>
+                <input type="text" id="titulo" name="titulo" required>
+            </div>
+            <div>
+                <label for="autor">Autor:</label>
+                <input type="text" id="autor" name="autor" required>
+            </div>
+            <div>
+                <label for="edicion">Edición:</label>
+                <input type="number" id="edicion" name="edicion" required>
+            </div>
+            <div>
+                <label for="precio">Precio:</label>
+                <input type="number" id="precio" name="precio" step="0.01" required>
+            </div>
+            <div>
+                <label for="stock">Stock:</label>
+                <input type="number" id="stock" name="stock" required>
+            </div>
+            <div>
+                <label for="id_genero">Género:</label>
+                <select id="id_genero" name="id_genero" required>
+                    <!-- Las opciones se cargarán dinámicamente -->
+                </select>
+            </div>
+            <div>
+                <label for="id_editorial">Editorial:</label>
+                <select id="id_editorial" name="id_editorial" required>
+                    <!-- Las opciones se cargarán dinámicamente -->
+                </select>
+            </div>
+            <button type="button" onclick="enviarFormularioLibro()">Enviar</button>
+        </form>
+    </div>
+
+    <div id="consultar_libro" class="opcion">
+        <h2>consultar libro</h2>
+        <form id="formulario_consulta">
+            <div>
+                <label for="criterio">Buscar por:</label>
+                <select id="criterio" name="criterio" required>
+                    <option value="nombre">Nombre</option>
+                    <option value="autor">Autor</option>
+                </select>
+            </div>
+            <div>
+                <label for="busqueda">Término de búsqueda:</label>
+                <input type="text" id="busqueda" name="busqueda" required>
+            </div>
+            <button type="button" onclick="consultarLibros()">Consultar</button>
+        </form>
+
+        <div id="resultado_consulta" class="opcion">
+            <!-- Aquí se mostrarán los resultados de la consulta -->
+        </div>
+
+    </div>
+
+
+
+    <div id="registrar_mobiliario" class="opcion">
+        <h2>Registrar mobiliario</h2>
+
+        <form id="formulario_mobiliario">
+            <div>
+                <label for="nombre_mobiliario">nombre:</label>
+                <input type="text" id="nombre_mobiliario" name="nombre_mobiliario" required>
+            </div>
+            <div>
+                <label for="descripcion_mobiliario">descripcion:</label>
+                <input type="text" id="descripcion_mobiliario" name="descripcion_mobiliario" required>
+            </div>
+            <div>
+
+
+                <label for="status_mobiliario">Status:</label>
+                <select id="status_mobiliario" name="status_mobiliario" required>
+                    <option value="1">disponible</option>
+                    <option value="0">no disponible</option>
+                </select>
+
+            </div>
+            <button type="button" onclick="enviarFormularioMobiliario()">Enviar</button>
+        </form>
+    </div>
+
+
+
+
+    <div id="consultar_mobiliario" class="opcion">
+        <h2>Consultar Mobiliario</h2>
+        <form id="formulario_consulta">
+            <div>
+                <label for="criterio_mobiliario">Buscar por:</label>
+                <select id="criterio_mobiliario" name="criterio_mobiliario" required>
+                    <option value="nombre">Nombre</option>
+                    <option value="id">ID</option>
+                    <option value="estatus">Status</option>
+                </select>
+            </div>
+            <div>
+                <label for="busqueda_mobiliario">Buscar:</label>
+                <input type="text" id="busqueda_mobiliario" name="busqueda_mobiliario" required>
+            </div>
+            <button type="button" onclick="consultarMobiliario()">Consultar</button>
+        </form>
+
+        <div id="resultado_consulta_mobiliario" class="opcion">
+            <!-- Aquí se mostrarán los resultados de la consulta -->
+        </div>
+    </div>
+
+
+
+
+</body>
+
+</html>

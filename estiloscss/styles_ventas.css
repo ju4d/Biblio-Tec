@@ -1,0 +1,285 @@
+body {
+    font-family: 'Lora', serif;
+    margin: 0;
+    padding: 0;
+    background-color: #1d1d1d;
+}
+
+h1 {
+    text-align: left;
+    color: #654236;
+    z-index: 2;
+    background-color: #D6D4A0;
+    top: 0px;
+    padding: 12px 14px;
+}
+
+html {
+    background-color: #3a3a3a;
+}
+
+header {
+    background-color: #D6D4A0;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    height: 40px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+}
+
+h2 {
+    text-align: center;
+    color: #fff;
+    margin-top: 30px;
+}
+
+h3 {
+    color: #fff;
+}
+
+form {
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+label {
+    display: block;
+    color: #ffff;
+    margin-bottom: 5px;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="tel"],
+input[type="date"],
+select {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    box-sizing: border-box;
+    border-radius: 15px;
+}
+
+input[type="submit"] {
+    background-color: #4caf50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+input[type="submit"]:hover {
+    background-color: #45a049;
+}
+
+button {
+    background-color: #db995a;
+    color: #ffffff;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 10px;
+    margin-bottom: 15px;
+}
+
+#formularioVenta {
+    margin-top: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+
+#detalle_libros {
+    width: 100%;
+    max-width: 800px;
+    margin-top: 20px;
+    padding: 20px;
+    border: 0px;
+    background-color: #3a3a3a;
+    color: #ffffff;
+}
+
+
+button:hover {
+    background-color: #654236;
+}
+
+.libro {
+    margin-bottom: 10px;
+    color: #ffffff;
+}
+
+#formulario_venta {
+    color: #ffffff;
+}
+
+.libro button {
+    margin-left: 5px;
+    cursor: pointer;
+    color: #4caf50;
+}
+
+.title {
+    border: 5px red inset;
+    text-align: center;
+    /* Centra el texto */
+    margin: 0 auto;
+    /* Centra el elemento horizontalmente */
+}
+
+/* Cambiar el color de fondo del cuerpo del documento */
+body {
+    background-color: #2826262e;
+    /* Puedes usar un color en hexadecimal, RGB, HSL o nombre */
+}
+
+#confirmacion {
+    display: flex;
+    justify-content: center;
+    /* Centra horizontalmente */
+    align-items: center;
+    /* Centra verticalmente */
+    height: 100vh;
+    /* Ajusta la altura al 100% del viewport */
+    color: #ffffff;
+}
+
+#detalle_libros {
+    float: right;
+    width: 300px;
+    padding: 20px;
+    border: 1px solid #ccc;
+    margin-left: 20px;
+}
+
+#confirmacion {
+    text-align: center;
+}
+
+
+/* barra*/
+#barra_vertical {
+
+    margin-top: 55px;
+    /* Ajusta el margen superior para que comience después del nav */
+    position: fixed;
+    /* Permite que el div se mantenga fijo en la pantalla */
+    left: 0;
+    /* Posiciona el div en el borde izquierdo de la pantalla */
+    top: 0;
+    /* Posiciona el div en la parte superior de la pantalla */
+    height: 100%;
+    /* Hace que el div ocupe toda la altura de la pantalla */
+    background-color: #db995a;
+    /* Color de fondo del div */
+    padding: 20px;
+    /* Espacio interior del div */
+    box-sizing: border-box;
+    /* Incluye el padding en el ancho y alto del div */
+    z-index: 3;
+}
+
+#barra_vertical li {
+    margin-bottom: 10px;
+    color: transparent;
+    /* Espacio entre cada elemento de la lista */
+}
+
+#barra_vertical a {
+    display: block;
+    /* Hace que los enlaces ocupen todo el ancho del div */
+    text-decoration: none;
+    /* Elimina el subrayado de los enlaces */
+    color: #fff;
+    background-color: #b78250;
+    border-radius: 5px;
+    padding: 10px 10px;
+    /* Color del texto de los enlaces */
+}
+
+#barra_vertical a:hover {
+    background-color: #654236;
+    /* Color de fondo cuando se pasa el mouse sobre los enlaces */
+}
+
+#resultado_consulta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 80%;
+    max-width: 800px;
+    margin: 20px auto;
+    /* Ajusta el margen derecho a 0 para pegarlo a la derecha */
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+#resultado_ventas_dia {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 80%;
+    max-width: 800px;
+    margin: 20px auto;
+    /* Ajusta el margen derecho a 0 para pegarlo a la derecha */
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+#resultado_consulta_mobiliario {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 80%;
+    max-width: 800px;
+    margin: 20px auto;
+    /* Ajusta el margen derecho a 0 para pegarlo a la derecha */
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table,
+th,
+td {
+    border: 1px solid #ddd;
+}
+
+th,
+td {
+    padding: 8px;
+    text-align: left;
+}
+
+th {
+    background-color: #f2f2f2;
+}
+
+.centrar {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.hidden {
+    display: none;
+}

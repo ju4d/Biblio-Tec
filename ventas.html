@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario de Venta</title>
+    <link rel="stylesheet" href="estiloscss/styles_ventas.css">
+    <script>
+        var librosAgregados = [];
+        var idsLibrosAgregados = new Set(); // Utilizamos un Set para almacenar los IDs únicos de los libros
+
+        var totalVenta = 0;
+
+        function agregarLibro() {
+            var idLibro = parseInt(document.getElementById('id_libro').value);
+            var cantidad = parseInt(document.getElementById('cantidad').value);
+            var idLibro = parseInt(document.getElementById('id_libro').value);
+
+            if (isNaN(idLibro) || idLibro <= 0) {
+                alert('Por favor ingresa un ID de libro válido.');
+                return;
+            }
+
+            if (idsLibrosAgregados.has(idLibro)) {
+                alert('Este libro ya ha sido agregado al formulario.');
+                return;
+            }
+            idsLibrosAgregados.add(idLibro);
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', 'php/obtener_datos_libro.php', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var respuesta = JSON.parse(xhr.responseText);
+                    if (respuesta.success) {
+                        librosAgregados.push({
+                            idLibro: idLibro,
+                            cantidad: cantidad,
+                            titulo: respuesta.data.titulo,
+                            autor: respuesta.data.autor,
+                            precio: parseFloat(respuesta.data.precio)
+                        });
+                        mostrarDetallesLibro(respuesta.data);
+                        document.getElementById('id_libro').value = '';
+                        document.getElementById('cantidad').value = '';
+                    } else {
+                        alert('El libro no existe en la base de datos.');
+                    }
+                }
+            };
+            xhr.send('id_libro=' + idLibro);
+        }
+
+        function mostrarDetallesLibro(data) {
+            var listaLibros = document.getElementById('lista_libros');
+            var li = document.createElement('li');
+            li.textContent = 'Título: ' + data.titulo + ', Autor: ' + data.autor + ', Precio: ' + data.precio;
+            listaLibros.appendChild(li);
+        }
+
+        function mostrarConfirmacion() {
+            if (librosAgregados.length === 0) {
+                alert('No se han agregado libros.');
+                return;
+            }
+
+            var confirmacionDetalle = document.getElementById("confirmacion_detalle");
+            var totalVentaContainer = document.getElementById("total_venta");
+
+            confirmacionDetalle.innerHTML = '';
+            totalVentaContainer.innerHTML = '';
+            var totalVenta = 0;
+            var iva = 0;
+
+            librosAgregados.forEach(function (libro) {
+                totalVenta += libro.precio * libro.cantidad;
+                iva += libro.precio * libro.cantidad * 0.17;
+            });
+
+            var Total = totalVenta + iva;
+
+            var subTotal = document.createElement("p");
+            subTotal.textContent = "Subtotal: " + totalVenta.toFixed(2);
+            totalVentaContainer.appendChild(subTotal);
+
+            var Iva = document.createElement("p");
+            Iva.textContent = "IVA: " + iva.toFixed(2);
+            totalVentaContainer.appendChild(Iva);
+
+            var TotalElement = document.createElement("p");
+            TotalElement.textContent = "Total: " + Total.toFixed(2);
+            totalVentaContainer.appendChild(TotalElement);
+
+
+            librosAgregados.forEach(function (libro) {
+                var p = document.createElement("p");
+                p.textContent = "ID Libro: " + libro.idLibro + ", Cantidad: " + libro.cantidad + ", Título: " + libro.titulo + ", Precio: " + libro.precio;
+                confirmacionDetalle.appendChild(p);
+            });
+
+            document.getElementById("confirmacion").style.display = "block";
+            document.getElementById("formulario_venta").style.display = "none";
+        }
+
+        function enviarVenta() {
+            const metodoPago = document.getElementById('metodo_pago').value;
+            const idCliente = document.getElementById('codigo_cliente').value;
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', 'php/registrar_venta.php', true);
+            xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    var respuesta = JSON.parse(xhr.responseText);
+                    if (xhr.status === 200 && respuesta.success) {
+                        alert('Venta registrada con éxito.');
+                        location.reload();
+                    } else {
+                        alert('Error al registrar la venta: ' + respuesta.error);
+                    }
+                }
+            };
+            xhr.send(JSON.stringify({
+                metodo_pago: metodoPago,
+                id_cliente: idCliente,
+                libros: librosAgregados,
+                total: totalVenta
+            }));
+        }
+
+        function mostrarFormularioVenta() {
+            document.getElementById('formularioVenta').classList.remove('hidden');
+            document.getElementById('buscar_ventas_dia').classList.add('hidden');
+        }
+
+        function mostrarVentasDia() {
+            document.getElementById('formularioVenta').classList.add('hidden');
+            document.getElementById('buscar_ventas_dia').classList.remove('hidden');
+        }
+        //
+        function buscarVentasPorDia() {
+            const fecha = document.getElementById('fecha_ventas').value;
+
+            fetch('php/buscar_ventas_dia.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    fecha_ventas: fecha
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    const resultadoDiv = document.getElementById('resultado_ventas_dia');
+                    resultadoDiv.innerHTML = '';
+
+                    if (data.success) {
+                        if (data.ventas.length > 0) {
+                            const table = document.createElement('table');
+                            table.innerHTML = `
+                            <tr>
+                                <th>Folio Venta</th>
+                                <th>Fecha</th>
+                                <th>Método de Pago</th>
+                                <th>ID Cliente</th>
+                            </tr>
+                        `;
+                            data.ventas.forEach(venta => {
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                                <td>${venta.folio_venta}</td>
+                                <td>${venta.fecha}</td>
+                                <td>${venta.metodo_pago}</td>
+                                <td>${venta.id_cliente}</td>
+                            `;
+                                table.appendChild(row);
+                            });
+                            resultadoDiv.appendChild(table);
+                        } else {
+                            resultadoDiv.textContent = 'No se encontraron ventas para la fecha proporcionada.';
+                        }
+                    } else {
+                        resultadoDiv.textContent = 'Error al realizar la consulta: ' + data.message;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al realizar la consulta:', error);
+                    document.getElementById('resultado_ventas_dia').textContent = 'Error al realizar la consulta. Por favor, inténtalo de nuevo.';
+                });
+        }
+        //
+    </script>
+</head>
+
+<body>
+    <header>
+        <h1>Ventas</h1>
+    </header>
+    <div id="barra_vertical">
+        <ul>
+            <li><a href="index.html">Menú Principal</a></li>
+            <li><a href="#" onclick="mostrarFormularioVenta()">Registrar Venta</a></li>
+            <li><a href="#" onclick="mostrarVentasDia()">Ventas del Día</a></li>
+        </ul>
+    </div>
+
+    <div id="formularioVenta" class="opcion hidden">
+        <form id="formulario_venta" onsubmit="enviarVenta(); return false;">
+            <div id="libros">
+                <div class="libro">
+                    <label for="id_libro">ID Libro:</label>
+                    <input type="number" id="id_libro" name="id_libro" required>
+                    <label for="cantidad">Cantidad:</label>
+                    <input type="number" id="cantidad" name="cantidad" required>
+                </div>
+            </div>
+            <button type="button" onclick="agregarLibro()">Agregar a carrito</button>
+
+            <label for="metodo_pago">Método de Pago:</label>
+            <select id="metodo_pago" name="metodo_pago" required>
+                <option value="">Seleccionar Método de Pago</option>
+                <option value="tarjeta_credito">Tarjeta</option>
+                <option value="efectivo">Efectivo</option>
+            </select>
+            <label for="codigo_cliente">Id del Cliente:</label>
+            <input type="number" id="codigo_cliente" name="codigo_cliente" required>
+
+            <button type="button" onclick="mostrarConfirmacion()">Confirmar Venta</button>
+        </form>
+        <div id="detalle_libros">
+            <h3>Resumen carrito</h3>
+            <ul id="lista_libros">
+                <!-- Lista de libros dinamica -->
+            </ul>
+        </div>
+    </div>
+
+    <div id="confirmacion" style="display: none;">
+        <h2>Confirmación de Venta</h2>
+        <div id="confirmacion_detalle"></div>
+        <div id="total_venta"></div>
+
+        <button type="button" onclick="enviarVenta()">Registrar Venta</button>
+    </div>
+
+
+
+
+    <div id="buscar_ventas_dia" class="opcion hidden">
+        <div class="centrar">
+            <h2>Buscar Ventas por Día</h2>
+        </div>
+        <form id="formulario_buscar_ventas_dia">
+            <div>
+                <label for="fecha_ventas">Fecha:</label>
+                <input type="date" id="fecha_ventas" name="fecha_ventas" required>
+            </div>
+            <button type="button" onclick="buscarVentasPorDia()">Buscar</button>
+        </form>
+        <div id="resultado_ventas_dia">
+            <!-- Aquí se mostrarán los resultados de las ventas por día -->
+        </div>
+    </div>
+    </div>
+</body>
+
+</html>
